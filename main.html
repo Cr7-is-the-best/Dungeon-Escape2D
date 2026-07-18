@@ -970,24 +970,41 @@ function drawPlayer(p,now){
   ctx.fillStyle = p.dashing ? cData.trail : cData.color;
 
   ctx.beginPath();
-  if(shape === 'diamond'){
-    ctx.moveTo(0,-TILE*0.34); ctx.lineTo(TILE*0.24,0); ctx.lineTo(0,TILE*0.34); ctx.lineTo(-TILE*0.24,0);
-  } else if(shape === 'square'){
-    ctx.rect(-TILE*0.25, -TILE*0.25, TILE*0.5, TILE*0.5);
-  } else if(shape === 'triangle'){
-    ctx.moveTo(0,-TILE*0.34); ctx.lineTo(TILE*0.3, TILE*0.25); ctx.lineTo(-TILE*0.3, TILE*0.25);
-  } else if(shape === 'star'){
-    for(let i=0; i<10; i++){
-      const ang = i * Math.PI / 5 - Math.PI/2;
-      const r = i%2===0 ? TILE*0.35 : TILE*0.15;
-      ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r);
+  if (shape === 'diamond') {
+    ctx.moveTo(0, -TILE * 0.34);
+    ctx.lineTo(TILE * 0.24, 0);
+    ctx.lineTo(0, TILE * 0.34);
+    ctx.lineTo(-TILE * 0.24, 0);
+
+} else if (shape === 'crescent') {
+    ctx.arc(0, 0, TILE * 0.3, 0, Math.PI * 2);
+    ctx.arc(TILE * 0.12, -TILE * 0.05, TILE * 0.25, 0, Math.PI * 2, true);
+
+} else if (shape === 'ellipse') {
+    ctx.ellipse(0, 0, TILE * 0.35, TILE * 0.2, 0, 0, Math.PI * 2);
+
+} else if (shape === 'polygon') {
+    for (let i = 0; i < 6; i++) {
+        const ang = i * Math.PI / 3;
+        ctx.lineTo(Math.cos(ang) * TILE * 0.3, Math.sin(ang) * TILE * 0.3);
     }
-  } else if(shape === 'hexagon'){
-    for(let i=0; i<6; i++){
-      const ang = i * Math.PI / 3;
-      ctx.lineTo(Math.cos(ang)*TILE*0.3, Math.sin(ang)*TILE*0.3);
+
+} else if (shape === 'star') {
+    for (let i = 0; i < 10; i++) {
+        const ang = i * Math.PI / 5 - Math.PI / 2;
+        const r = i % 2 === 0 ? TILE * 0.35 : TILE * 0.15;
+        ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r);
     }
-  }
+
+} else if (shape === 'arrow') {
+    ctx.moveTo(0, -TILE * 0.35);
+    ctx.lineTo(TILE * 0.3, 0);
+    ctx.lineTo(TILE * 0.1, 0);
+    ctx.lineTo(TILE * 0.1, TILE * 0.35);
+    ctx.lineTo(-TILE * 0.1, TILE * 0.35);
+    ctx.lineTo(-TILE * 0.1, 0);
+    ctx.lineTo(-TILE * 0.3, 0);
+}
   ctx.closePath(); ctx.fill();
 
   ctx.fillStyle='#cfe8ff'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
@@ -1075,18 +1092,20 @@ function addScorePopup(x,y,text){
 // ===================== SHOP =====================
 const COLOR_DATA = {
   blue: { name: 'Mana Blue', color: '#4a8fd6', glow: '#6fb7ff', trail: '#88ccff', price: 0 },
-  red: { name: 'Crimson', color: '#d64a4a', glow: '#ff6f6f', trail: '#ff8888', price: 300 },
-  green: { name: 'Emerald', color: '#4ad66d', glow: '#6fff8c', trail: '#88ffaa', price: 500 },
-  purple: { name: 'Void', color: '#9d4ad6', glow: '#c76fff', trail: '#d588ff', price: 800 },
-  gold: { name: 'Legendary', color: '#d6b84a', glow: '#ffef6f', trail: '#fff088', price: 2000 }
+  red: { name: 'Crimson', color: '#d64a4a', glow: '#ff6f6f', trail: '#ff8888', price: 200 },
+  green: { name: 'Emerald', color: '#4ad66d', glow: '#6fff8c', trail: '#88ffaa', price: 350 },
+  purple: { name: 'Void', color: '#9d4ad6', glow: '#c76fff', trail: '#d588ff', price: 750 },
+  gold: { name: 'Legendary', color: '#d6b84a', glow: '#ffef6f', trail: '#fff088', price: 1000 },
+  black: {name: 'Super Legendary', color: '#000000', glow: '#2b2b2b', trail: '#555555', price: 1750}
 };
 
 const SHAPE_DATA = {
   diamond: { name: 'Diamond', price: 0 },
-  square: { name: 'Square', price: 400 },
-  triangle: { name: 'Triangle', price: 600 },
+  crescent: { name: 'Crescent', price: 400 },
+  ellipse: { name: 'Ellipse', price: 600 },
+  polygon: { name: 'Polygon', price: 800},
   star: { name: 'Star', price: 1000 },
-  hexagon: { name: 'Hexagon', price: 1500 }
+  arrow: { name: 'Arrow', price: 1500 }
 };
 
 function updateShopUI(){
