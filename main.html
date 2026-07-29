@@ -118,7 +118,6 @@
   .shop-item p{ font-size:11px; color:var(--text-dim); }
   .shop-item .price{ color:var(--gold); font-weight:bold; font-size:14px; }
   .shop-item.owned{ border-color:var(--green); opacity:0.7; }
-  /* .shop-item.owned button{ display:none; } */ /* Removed to allow Equip button to show */
   .shop-item.owned::after{ content: 'UNLOCKED'; color:var(--green); font-weight:bold; font-size:10px; }
 
   #msg{
@@ -223,7 +222,6 @@
 <body>
 
 <h1>Dungeon Escape</h1>
-<div class="subtitle">find the keys &bull; reach the light &bull; don't get caught</div>
 
 <div id="wrap">
   <canvas id="game"></canvas>
@@ -231,45 +229,18 @@
 
   <!-- Shop Screen -->
   <div id="shop-screen">
-    <h2 style="color:var(--gold); margin-bottom:15px; text-transform:uppercase; letter-spacing:4px;">The Black Market</h2>
-    <div style="margin-bottom:15px; color:var(--gold);">Bank: $<span id="shop-bank">0</span></div>
-    <div class="shop-grid">
-      <div class="shop-item" id="item-armor">
-        <h3>Sturdy Armor</h3>
-        <p>+1 Max Heart</p>
-        <div class="price">$500</div>
-        <button id="buy-armor">Buy</button>
-      </div>
-      <div class="shop-item" id="item-boots">
-        <h3>Swift Boots</h3>
-        <p>Faster Dash CD</p>
-        <div class="price">$800</div>
-        <button id="buy-boots">Buy</button>
-      </div>
-      <div class="shop-item" id="item-key">
-        <h3>Master Key</h3>
-        <p>Start with 1 Key</p>
-        <div class="price">$1200</div>
-        <button id="buy-key">Buy</button>
-      </div>
-      <div class="shop-item" id="item-cloak">
-        <h3>Ghost Cloak</h3>
-        <p>+50% Invincibility</p>
-        <div class="price">$1500</div>
-        <button id="buy-cloak">Buy</button>
-      </div>
-      <div class="shop-item" id="item-compass">
-        <h3>Golden Compass</h3>
-        <p>Show Key Distance</p>
-        <div class="price">$2000</div>
-        <button id="buy-compass">Buy</button>
+    <div style="display:flex; justify-content:center; align-items:center; gap:30px; margin-bottom:25px;">
+      <h2 style="color:var(--gold); text-transform:uppercase; letter-spacing:4px; margin:0;">The Black Market</h2>
+      <div style="text-align:center;">
+        <div style="color:var(--text); font-size:12px; letter-spacing:2px; margin-bottom:3px;">BANK</div>
+        <div style="color:var(--torch-glow); font-size:24px; font-weight:bold;">$<span id="shop-bank">0</span></div>
       </div>
     </div>
-    <h3 style="color:var(--torch-glow); margin: 10px 0; text-transform:uppercase;">Color Boutique</h3>
+    <h3 style="color:var(--torch-glow); margin: 20px 0 10px 0; text-transform:uppercase;">Color Boutique</h3>
     <div class="shop-grid" id="color-grid">
       <!-- Colors will be injected here -->
     </div>
-    <h3 style="color:var(--torch-glow); margin: 10px 0; text-transform:uppercase;">Shape Atelier</h3>
+    <h3 style="color:var(--torch-glow); margin: 20px 0 10px 0; text-transform:uppercase;">Shape Atelier</h3>
     <div class="shop-grid" id="shape-grid">
       <!-- Shapes will be injected here -->
     </div>
@@ -286,7 +257,6 @@
       <button class="secondary" id="msgShop">The Market</button>
       <button class="secondary" id="msgSave">Save Progress</button>
       <button class="secondary" id="msgMenu" style="display:none">Main Menu</button>
-      <!-- Skip button removed -->
     </div>
   </div>
 </div>
@@ -302,11 +272,6 @@
   <div class="hud-item"><button id="hudSave" style="padding:4px 10px; font-size:10px; margin:0;">Save</button></div>
 </div>
 
-<div id="controls">
-  Move: <b>WASD</b>/<b>Arrows</b> | Dash: <b>Shift</b> |
-  Collect gold to buy upgrades at the Market. Wardens patrol until they spot you. Get keys, find the door.
-</div>
-
 <div id="transition"></div>
 
 <script>
@@ -319,86 +284,19 @@ const storage = {
   set: (key, val) => { try { localStorage.setItem(key, val); } catch(e) {} }
 };
 
-// ===================== AUDIO ENGINE (USER'S EXACT CODE) =====================
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-function getAudio(){
-  if(!audioCtx) audioCtx = new AudioCtx();
-  if(audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx;
-}
-function playTone(freq, type, dur, vol, attack, decay){
-  try{
-    const ac = getAudio();
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = type||'sine';
-    o.frequency.setValueAtTime(freq, ac.currentTime);
-    g.gain.setValueAtTime(0, ac.currentTime);
-    g.gain.linearRampToValueAtTime(vol||0.15, ac.currentTime+(attack||0.01));
-    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+(dur||0.2)+(decay||0));
-    o.start(ac.currentTime);
-    o.stop(ac.currentTime+(dur||0.2)+(decay||0)+0.05);
-  }catch(e){}
-}
-function playNoise(dur, vol, freq){
-  try{
-    const ac = getAudio();
-    const buf = ac.createBuffer(1, ac.sampleRate*dur, ac.sampleRate);
-    const d = buf.getChannelData(0);
-    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
-    const src = ac.createBufferSource();
-    src.buffer = buf;
-    const filt = ac.createBiquadFilter();
-    filt.type = 'bandpass';
-    filt.frequency.value = freq||400;
-    filt.Q.value = 1;
-    const g = ac.createGain();
-    g.gain.setValueAtTime(vol||0.1, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
-    src.connect(filt); filt.connect(g); g.connect(ac.destination);
-    src.start(); src.stop(ac.currentTime+dur+0.05);
-  }catch(e){}
-}
+// ===================== AUDIO ENGINE (DISABLED) =====================
 const SFX = {
-  step(){ playNoise(0.06, 0.04, 200); },
-  keyPickup(){
-    playTone(523, 'sine', 0.1, 0.2, 0.01);
-    setTimeout(()=>playTone(659, 'sine', 0.1, 0.2, 0.01), 80);
-    setTimeout(()=>playTone(784, 'sine', 0.15, 0.25, 0.01), 160);
-  },
-  gold(){ playTone(987, 'sine', 0.1, 0.15); setTimeout(()=>playTone(1318,'sine',0.15,0.15), 50); },
-  trap(){
-    playNoise(0.3, 0.25, 800);
-    playTone(110, 'sawtooth', 0.4, 0.2, 0.01);
-  },
-  caught(){
-    playTone(220, 'sawtooth', 0.15, 0.25, 0.01);
-    setTimeout(()=>playTone(165, 'sawtooth', 0.15, 0.25, 0.01), 150);
-    setTimeout(()=>playTone(110, 'sawtooth', 0.4, 0.3, 0.01), 300);
-  },
-  alert(){
-    playTone(880, 'square', 0.08, 0.12, 0.005);
-    setTimeout(()=>playTone(1100, 'square', 0.08, 0.12, 0.005), 100);
-  },
-  doorOpen(){
-    for(let i=0;i<5;i++) setTimeout(()=>playTone(440+i*110,'sine',0.15,0.2,0.01),i*60);
-  },
-  win(){
-    const notes=[523,659,784,1047];
-    notes.forEach((n,i)=>setTimeout(()=>playTone(n,'sine',0.2,0.25,0.01),i*100));
-  },
-  lose(){
-    playTone(220,'sawtooth',0.2,0.2,0.01);
-    setTimeout(()=>playTone(196,'sawtooth',0.2,0.2,0.01),200);
-    setTimeout(()=>playTone(165,'sawtooth',0.5,0.3,0.01),400);
-  },
-  dash(){
-    playTone(600,'sine',0.08,0.15,0.005);
-    playNoise(0.1,0.08,600);
-  },
-  hit(){ playNoise(0.2, 0.2, 300); }
+  step(){},
+  keyPickup(){},
+  gold(){},
+  trap(){},
+  caught(){},
+  alert(){},
+  doorOpen(){},
+  win(){},
+  lose(){},
+  dash(){},
+  hit(){}
 };
 
 // ===================== RNG & MAZE (USER'S EXACT CODE) =====================
@@ -532,7 +430,6 @@ const msgShop=document.getElementById('msgShop');
 const msgMenu=document.getElementById('msgMenu');
 const msgSave=document.getElementById('msgSave');
 const hudSave=document.getElementById('hudSave');
-const msgSkip=document.getElementById('msgSkip');
 const scoreEl=document.getElementById('scoreEl');
 const heartsEl=document.getElementById('hearts');
 const transitionEl=document.getElementById('transition');
@@ -561,7 +458,7 @@ function buildLevel(idx){
   const rng=mulberry32(idx*7919+12345);
   const cellCols=Math.min(13,6+Math.floor(idx/3));
   const cellRows=Math.min(10,5+Math.floor(idx/4));
-  const {grid,W,H}=generateMaze(cellCols,cellRows,rng,0.45); // Increased loop chance for more pathways
+  const {grid,W,H}=generateMaze(cellCols,cellRows,rng,0.45);
 
   const startR=1,startC=1;
   const exitR=H-2,exitC=W-2;
@@ -592,12 +489,10 @@ function buildLevel(idx){
         }
   }
 
-  // Add even more "holes" by breaking down random interior wall segments
   for(let i=0; i<Math.floor(W*H*0.05); i++){
     const wr = 1 + Math.floor(rng()*(H-2));
     const wc = 1 + Math.floor(rng()*(W-2));
     if(grid[wr][wc]===1){
-      // Only break if it connects two open spaces
       let openN = 0;
       if(grid[wr-1][wc]===0) openN++; if(grid[wr+1][wc]===0) openN++;
       if(grid[wr][wc-1]===0) openN++; if(grid[wr][wc+1]===0) openN++;
@@ -637,7 +532,7 @@ function loadLevel(idx,keepHealth){
     health:keepHealth||maxH,
     collectedKeys:new Set(),
     gold:0, won:false, lost:false, elapsed:0, moveCooldown:180, keysDown:{},
-    enemies:level.enemies, anyChasing:false, score:0
+    enemies:level.enemies, anyChasing:false, score:0, levelGold:0
   };
 
   if(meta.upgrades.key && level.keys.length > 0) state.collectedKeys.add(level.keys[0]);
@@ -646,7 +541,7 @@ function loadLevel(idx,keepHealth){
   msgEl.style.display='none';
   statusEl.textContent='seeking';
   keyCountEl.textContent=state.collectedKeys.size;
-  goldEl.textContent='0';
+  goldEl.textContent=meta.gold + state.levelGold;
   updateHearts();
   markExplored(1,1,4);
 }
@@ -701,7 +596,6 @@ function showMenu(){
   msgShop.style.display='inline-block';
   msgSave.style.display='inline-block';
   msgMenu.style.display='none';
-  // msgSkip hidden
   msgScore.textContent="";
   msgBest.textContent="High Score: " + meta.best;
   msgEl.style.display='flex';
@@ -757,7 +651,7 @@ function checkTile(){
 
   for(let i=cur.gold.length-1; i>=0; i--){
     if(cur.gold[i].r===p.r && cur.gold[i].c===p.c){
-      cur.gold.splice(i,1); s.gold += 50; goldEl.textContent = s.gold;
+      cur.gold.splice(i,1); s.levelGold += 50; goldEl.textContent = meta.gold + s.levelGold;
       SFX.gold(); spawnParticles(p.px+TILE/2,p.py+TILE/2,'#ffd76a',10);
       addScorePopup(p.px+TILE/2,p.py,'+$50');
     }
@@ -799,8 +693,9 @@ function winGame(){
   const timeBonus=Math.max(0,Math.floor(500-state.elapsed*5));
   const lScore=state.score+timeBonus+(state.health*150);
   totalScore+=lScore-state.score;
-  meta.gold += state.gold;
+  meta.gold += state.levelGold;
   storage.set('de_gold', meta.gold);
+  goldEl.textContent = meta.gold;
   if(totalScore > meta.best){ meta.best=totalScore; storage.set('de_best', meta.best); }
 
   msgTitle.textContent="Level "+(levelIndex+1)+" Clear!";
@@ -819,7 +714,7 @@ function loseGame(title,body){
   msgBtn.textContent="Try Again";
   msgMenu.style.display='inline-block';
   msgScore.textContent="";
-  msgBest.textContent="";   // msgSkip removed
+  msgBest.textContent="";
   msgEl.style.display='flex';
 }
 
@@ -847,7 +742,7 @@ function render(now){
         ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,TILE-1,TILE-1);
         ctx.fillStyle='rgba(255,255,255,0.04)'; ctx.fillRect(x+2,y+2,TILE-4,3);
         if(v>0.85){
-          ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1; ctx.beginPath();
+          ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1;
           ctx.moveTo(x+TILE*0.3,y+TILE*0.2); ctx.lineTo(x+TILE*0.5,y+TILE*0.5); ctx.lineTo(x+TILE*0.6,y+TILE*0.8); ctx.stroke();
         }
       } else {
@@ -975,28 +870,23 @@ function drawPlayer(p,now){
     ctx.lineTo(TILE * 0.24, 0);
     ctx.lineTo(0, TILE * 0.34);
     ctx.lineTo(-TILE * 0.24, 0);
-
-} else if (shape === 'crescent') {
+  } else if (shape === 'crescent') {
     ctx.arc(0, 0, TILE * 0.3, 0, Math.PI * 2);
     ctx.arc(TILE * 0.12, -TILE * 0.05, TILE * 0.25, 0, Math.PI * 2, true);
-
-} else if (shape === 'ellipse') {
+  } else if (shape === 'ellipse') {
     ctx.ellipse(0, 0, TILE * 0.35, TILE * 0.2, 0, 0, Math.PI * 2);
-
-} else if (shape === 'polygon') {
+  } else if (shape === 'polygon') {
     for (let i = 0; i < 6; i++) {
         const ang = i * Math.PI / 3;
         ctx.lineTo(Math.cos(ang) * TILE * 0.3, Math.sin(ang) * TILE * 0.3);
     }
-
-} else if (shape === 'star') {
+  } else if (shape === 'star') {
     for (let i = 0; i < 10; i++) {
         const ang = i * Math.PI / 5 - Math.PI / 2;
         const r = i % 2 === 0 ? TILE * 0.35 : TILE * 0.15;
         ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r);
     }
-
-} else if (shape === 'arrow') {
+  } else if (shape === 'arrow') {
     ctx.moveTo(0, -TILE * 0.35);
     ctx.lineTo(TILE * 0.3, 0);
     ctx.lineTo(TILE * 0.1, 0);
@@ -1004,7 +894,7 @@ function drawPlayer(p,now){
     ctx.lineTo(-TILE * 0.1, TILE * 0.35);
     ctx.lineTo(-TILE * 0.1, 0);
     ctx.lineTo(-TILE * 0.3, 0);
-}
+  }
   ctx.closePath(); ctx.fill();
 
   ctx.fillStyle='#cfe8ff'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
@@ -1110,7 +1000,6 @@ const SHAPE_DATA = {
 
 function updateShopUI(){
   document.getElementById('shop-bank').textContent = meta.gold;
-  for(const k in meta.upgrades) if(meta.upgrades[k]) document.getElementById('item-'+k).classList.add('owned');
 
   const grid = document.getElementById('color-grid');
   grid.innerHTML = '';
@@ -1121,7 +1010,7 @@ function updateShopUI(){
     if(meta.activeColor === id) item.style.borderColor = 'var(--torch-glow)';
 
     item.innerHTML = `
-      <div style="width:20px; height:20px; background:${data.color}; border-radius:4px; box-shadow:0 0 10px ${data.glow}"></div>
+      <div style="width:40px; height:40px; background:${data.color}; border:2px solid ${data.glow}; border-radius:4px; box-shadow:0 0 15px ${data.glow}, inset 0 0 10px rgba(0,0,0,0.5)"></div>
       <h3>${data.name}</h3>
       <div class="price">${meta.colors[id] ? (meta.activeColor === id ? 'EQUIPPED' : 'OWNED') : '$'+data.price}</div>
       ${!meta.colors[id] ? `<button onclick="buyColor('${id}', ${data.price})">Buy</button>` :
@@ -1191,11 +1080,7 @@ function buy(id, price){
     SFX.gold(); updateShopUI();
   }
 }
-document.getElementById('buy-armor').onclick = () => buy('armor', 500);
-document.getElementById('buy-boots').onclick = () => buy('boots', 800);
-document.getElementById('buy-key').onclick = () => buy('key', 1200);
-document.getElementById('buy-cloak').onclick = () => buy('cloak', 1500);
-document.getElementById('buy-compass').onclick = () => buy('compass', 2000);
+
 
 msgMenu.onclick = () => {
   gameStarted = false;
@@ -1216,8 +1101,6 @@ function saveGame(){
   addScorePopup(window.innerWidth/2 - 50, window.innerHeight/2, 'GAME SAVED!');
 }
 msgSave.onclick = saveGame;
-
-msgSave.onclick = saveGame;
 hudSave.onclick = saveGame;
 
 // ===================== LOOP =====================
@@ -1236,7 +1119,6 @@ function loop(now){
       const t=Math.min(1,p.animT/speed); p.px=p.fromC*TILE+(p.c*TILE-p.fromC*TILE)*t; p.py=p.fromR*TILE+(p.r*TILE-p.fromR*TILE)*t;
       if(t>=1){ p.moving=false; p.px=p.c*TILE; p.py=p.r*TILE; checkTile(); }
     }
-    // Enemies
     let anyChasing=false;
     for(const en of state.enemies){
       if(en.alertTimer>0) en.alertTimer-=dt;
@@ -1260,7 +1142,6 @@ function loop(now){
       if(next){ en.dir=[next[0]-en.r,next[1]-en.c]; en.fromR=en.r; en.fromC=en.c; en.r=next[0]; en.c=next[1]; en.moving=true; en.animT=0; }
     }
     state.anyChasing=anyChasing;
-    // Collisions
     if(p.invincible<=0){
       for(const en of state.enemies){
         if(Math.abs(en.px-p.px)<TILE*0.45&&Math.abs(en.py-p.py)<TILE*0.45){ SFX.caught(); takeDamage("Caught!","A warden has captured you."); break; }
